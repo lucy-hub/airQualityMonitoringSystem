@@ -6,23 +6,25 @@
 #line 1 "/Users/lucy/Mr_argon/ArgonAirQualitySystem/airQualityMonitoringSystem/src/airQualityMonitoringSystem.ino"
 /*
  * Project airQualityMonitoringSystem
- * Description:
- * Author:
- * Date:
+ * Description: :)
+ * Author: Lucy Smith
+ * Date: 02/12/22
  */
 
 #include <math.h>
 #include "Air_Quality_Sensor.h"
 #include "Adafruit_BME280.h"
 #include "SeeedOLED.h"
+#include "JsonParserGeneratorRK.h"
 
 void getDustSensorReadings();
 String getAirQuality();
+void createEventPayload(int temp, int humidity, int pressure, String airQuality);
 int getBMEValues(int &temp, int &pressure, int &humidity);
 void updateDisplay(int temp, int humidity, int pressure, String airQuality);
 void setup();
 void loop();
-#line 13 "/Users/lucy/Mr_argon/ArgonAirQualitySystem/airQualityMonitoringSystem/src/airQualityMonitoringSystem.ino"
+#line 14 "/Users/lucy/Mr_argon/ArgonAirQualitySystem/airQualityMonitoringSystem/src/airQualityMonitoringSystem.ino"
 #define DUST_SENSOR_PIN D4
 #define SENSOR_READING_INTERVAL 30000
 #define AQS_PIN A2
@@ -93,7 +95,27 @@ int led = D7;
 
 
 
+void createEventPayload(int temp, int humidity, int pressure, String airQuality)
+{
+  JsonWriterStatic<256> jw;
+  {
+    JsonWriterAutoObject obj(&jw);
 
+    jw.insertKeyValue("temp", temp);
+    jw.insertKeyValue("humidity", humidity);
+    jw.insertKeyValue("pressure", pressure);
+    jw.insertKeyValue("air-quality", airQuality);
+
+    if (lowpulseoccupancy > 0)
+    {
+      jw.insertKeyValue("dust-lpo", lowpulseoccupancy);
+      jw.insertKeyValue("dust-ratio", ratio);
+      jw.insertKeyValue("dust-concentration", concentration);
+    }
+  }
+
+  Particle.publish("env-vals", jw.getBuffer(), PRIVATE);
+}
 
 
 
@@ -125,9 +147,10 @@ void updateDisplay(int temp, int humidity, int pressure, String airQuality)
  SeeedOled.putString("%");
 
  SeeedOled.setTextXY(4, 0);
- SeeedOled.putString("Press: ");
- SeeedOled.putNumber(pressure);
- SeeedOled.putString(" hPa");
+ SeeedOled.putString("Hello Thomas");
+ //SeeedOled.putString("Press: ");
+ //SeeedOled.putNumber(pressure);
+ //SeeedOled.putString(" hPa");
 
  if (concentration > 1)
  {
@@ -227,4 +250,7 @@ void loop() {
 
   //Display loop
   updateDisplay(temp, humidity, pressure, quality);
+
+  //Publish data
+  createEventPayload(temp, humidity, pressure, quality);
 }
